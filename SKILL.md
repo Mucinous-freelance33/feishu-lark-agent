@@ -14,270 +14,111 @@ description: |
 
 # Feishu Lark Agent
 
-Full-featured Feishu/Lark workspace integration. Powered by `feishu.py` — a zero-dependency Python CLI using Feishu Open API.
+Zero-dependency Python CLI for Feishu/Lark Open API.
 
-## Script Path
+## Run
 
-```
-~/.claude/skills/feishu-lark-agent/feishu.py
-```
-
-## Prerequisites
-
-```bash
-# Credentials must be set (already in ~/.zshrc)
-export FEISHU_APP_ID=your_app_id_here
-export FEISHU_APP_SECRET=your_app_secret_here
-```
-
-Run as:
 ```bash
 source ~/.zshrc && python3 ~/.claude/skills/feishu-lark-agent/feishu.py <category> <action> [--key value ...]
 ```
 
----
+## Environment Variables
 
-## Messages (`msg`)
-
-### Send message
 ```bash
-# Send to user by email
-python3 feishu.py msg send --email user@example.com --text "Hello"
-
-# Send to user by open_id
-python3 feishu.py msg send --to ou_xxxxxxxx --text "Hello"
-
-# Send to group chat
-python3 feishu.py msg send --chat oc_xxxxxxxx --text "Hello group"
-
-# Send from file
-python3 feishu.py msg send --email user@example.com --file /tmp/msg.txt
+FEISHU_APP_ID=cli_xxx          # required
+FEISHU_APP_SECRET=xxx          # required
+FEISHU_OWNER_OPEN_ID=ou_xxx    # optional — auto-grants doc edit + cal invite to this user
 ```
 
-### Get chat history
-```bash
-python3 feishu.py msg history --chat oc_xxxxxxxx --limit 20
-```
-
-### Reply to message
-```bash
-python3 feishu.py msg reply --to <message_id> --text "Reply content"
-```
-
-### Search messages
-```bash
-python3 feishu.py msg search --query "关键词" --limit 20
-```
-
-### List chats (groups + DMs)
-```bash
-python3 feishu.py msg chats --limit 50
-```
+When `FEISHU_OWNER_OPEN_ID` is set:
+- `doc create` → automatically grants full_access to that user
+- `cal add` → automatically adds that user as calendar attendee
 
 ---
 
-## Users (`user`)
+## Commands
 
-### Look up user by email
+### Messages (`msg`)
+
 ```bash
-python3 feishu.py user get --email someone@example.com
-# Returns: open_id, user_id, name, avatar, etc.
+msg send  --email <email> | --to <open_id> | --chat <chat_id>  --text "..." | --file /path
+msg history --chat <chat_id> [--limit 20]
+msg reply --to <message_id> --text "..."
+msg search --query "关键词" [--limit 20]
+msg chats  [--limit 50]
 ```
 
-### Look up user by open_id
+### Users (`user`)
+
 ```bash
-python3 feishu.py user get --id ou_xxxxxxxx
+user get --email <email>          # returns open_id, name, etc.
+user get --id <open_id>
+user search --name "张三"
 ```
 
-### Search users by name
+### Documents (`doc`)
+
 ```bash
-python3 feishu.py user search --name "张三"
+doc create --title "会议记录" [--folder <token>] [--file /path/to/content.md]
+doc get    --id <document_id>     # document_id from URL: feishu.cn/docx/DOC_ID
+doc list   [--folder <token>] [--limit 50]
 ```
 
----
-
-## Documents (`doc`)
-
-### Create document
-```bash
-python3 feishu.py doc create --title "会议记录"
-python3 feishu.py doc create --title "报告" --folder <folder_token>
-```
-
-### Read document content
-```bash
-python3 feishu.py doc get --id <document_id>
-# document_id is in the URL: feishu.cn/docx/DOC_ID
-```
-
-### List documents in folder
-```bash
-python3 feishu.py doc list
-python3 feishu.py doc list --folder <folder_token> --limit 20
-```
-
----
-
-## Bitable / Multi-dimensional Tables (`table`)
+### Bitable (`table`)
 
 App token is in URL: `feishu.cn/base/APP_TOKEN`
-Table ID is the table identifier (from the API or UI).
 
-### List records
 ```bash
-python3 feishu.py table records --app bASc1234xxx --table tblXXXX
-python3 feishu.py table records --app bASc... --table tbl... --limit 50
-
-# With filter (Feishu filter syntax)
-python3 feishu.py table records --app bASc... --table tbl... \
-  --filter 'AND(CurrentValue.[状态]="进行中")'
+table fields  --app <token> --table <id>
+table records --app <token> --table <id> [--filter 'AND(CurrentValue.[状态]="进行中")'] [--limit 100]
+table add     --app <token> --table <id> --data '{"字段":"值"}'
+table update  --app <token> --table <id> --record <recXXX> --data '{"字段":"新值"}'
+table delete  --app <token> --table <id> --record <recXXX>
+table tables  --app <token>
 ```
 
-### Add record
-```bash
-python3 feishu.py table add --app bASc... --table tbl... \
-  --data '{"名称":"新项目","状态":"待开始","负责人":"张三"}'
+Always run `table fields` first to see available field names before writing records.
 
-# From JSON file
-python3 feishu.py table add --app bASc... --table tbl... --file /tmp/record.json
+### Calendar (`cal`)
+
+> ⚠️ Bot uses tenant token — cannot access user's personal calendar. Use the bot's own calendar ID (not `primary`). Get it with:
+> ```bash
+> python3 -c "import sys,os,json; sys.path.insert(0,'~/.claude/skills/feishu-lark-agent'.replace('~',os.path.expanduser('~'))); import feishu; print(json.dumps(feishu.api('GET','/calendar/v4/calendars',params={'page_size':50}),indent=2,ensure_ascii=False))"
+> ```
+
+```bash
+cal list   --calendar <id> [--days 7]
+cal add    --calendar <id> --title "..." --start "YYYY-MM-DD HH:MM" --end "YYYY-MM-DD HH:MM" [--location "..."] [--desc "..."] [--attendees "a@x.com,b@x.com"]
+cal delete --calendar <id> --id <event_id>
 ```
 
-### Update record
-```bash
-python3 feishu.py table update --app bASc... --table tbl... \
-  --record recXXXX --data '{"状态":"已完成"}'
-```
+### Tasks (`task`)
 
-### Delete record
 ```bash
-python3 feishu.py table delete --app bASc... --table tbl... --record recXXXX
-```
-
-### List tables in app
-```bash
-python3 feishu.py table tables --app bASc...
-```
-
-### List fields in table
-```bash
-python3 feishu.py table fields --app bASc... --table tbl...
+task list   [--completed true] [--limit 50]
+task add    --title "..." [--due "YYYY-MM-DD"] [--note "..."]
+task done   --id <task_guid>
+task delete --id <task_guid>
 ```
 
 ---
 
-## Calendar (`cal`)
+## Key Workflows
 
-> Note: Calendar operations use tenant access token. If "primary" calendar isn't accessible,
-> the app may need calendar permissions or the user's personal calendar_id.
+**Send to person by name** (only have name, not ID):
+1. `user search --name "张三"` → get open_id
+2. `msg send --to <open_id> --text "..."`
 
-### List upcoming events
-```bash
-# Default: next 7 days
-python3 feishu.py cal list
-
-# Next 30 days
-python3 feishu.py cal list --days 30
-
-# Specific calendar
-python3 feishu.py cal list --calendar <calendar_id> --days 7
-```
-
-### Create event
-```bash
-python3 feishu.py cal add \
-  --title "产品评审会" \
-  --start "2026-03-15 14:00" \
-  --end "2026-03-15 15:30"
-
-# With location and description
-python3 feishu.py cal add \
-  --title "团队午饭" \
-  --start "2026-03-15 12:00" \
-  --end "2026-03-15 13:00" \
-  --location "3楼会议室" \
-  --desc "季度复盘"
-
-# With attendees (comma-separated emails)
-python3 feishu.py cal add \
-  --title "对齐会" \
-  --start "2026-03-16 10:00" \
-  --end "2026-03-16 11:00" \
-  --attendees "a@example.com,b@example.com"
-```
-
-### Delete event
-```bash
-python3 feishu.py cal delete --id <event_id>
-```
-
----
-
-## Tasks (`task`)
-
-> Note: Task API (v2) may require the app to have task permissions enabled.
-
-### List tasks
-```bash
-# Active tasks
-python3 feishu.py task list
-
-# Completed tasks
-python3 feishu.py task list --completed true --limit 20
-```
-
-### Create task
-```bash
-python3 feishu.py task add --title "完成季度报告"
-
-# With due date
-python3 feishu.py task add --title "提交报告" --due "2026-03-20"
-
-# With note
-python3 feishu.py task add --title "准备演示" --due "2026-03-18 09:00" \
-  --note "需要准备PPT和数据"
-```
-
-### Mark task as done
-```bash
-python3 feishu.py task done --id <task_guid>
-```
-
-### Delete task
-```bash
-python3 feishu.py task delete --id <task_guid>
-```
-
----
-
-## Workflow: Sending to a Person by Name
-
-When user says "发飞书消息给张三" but you only have a name:
-1. `user search --name "张三"` to get open_id
-2. `msg send --to <open_id> --text "..."` to send
-
-## Workflow: Working with Bitable
-
-When user says "在多维表格里添加一条记录":
-1. Ask user for app_token and table_id (or check if they mentioned a URL)
-2. `table fields --app ... --table ...` to see available fields
-3. `table add --app ... --table ... --data '{...}'` to add record
+**Add Bitable record** (unknown fields):
+1. `table fields --app ... --table ...` → see field names and types
+2. `table add --app ... --table ... --data '{...}'`
 
 ## Common Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `API error 99991671` | App not authorized | Enable permissions in Feishu Open Platform |
-| `API error 230006` | No access to calendar | Need calendar.event:write permission |
-| `API error 1254043` | Bitable not found | Check app_token in URL |
-| `Missing FEISHU_APP_ID` | Env not loaded | `source ~/.zshrc` first |
-
-## App Permissions Required (Feishu Open Platform)
-
-For full functionality, ensure these are enabled:
-- `im:message` - Send/read messages
-- `im:message:send_as_bot` - Send as bot
-- `docs:doc` - Create/read docs
-- `bitable:app` - Bitable operations
-- `calendar:calendar:write` - Calendar write
-- `task:task:write` - Task write
-- `contact:user.id:readonly` - User lookup
+| `99991671` | App not authorized | Enable permission in Feishu Open Platform |
+| `230006` | No calendar access | Enable `calendar:calendar` permission |
+| `1254043` | Bitable not found | Check app_token in URL |
+| `191001` | Invalid calendar_id | Don't use `primary`; get real calendar ID (see above) |
+| `Missing FEISHU_APP_ID` | Env not loaded | `source ~/.zshrc` |
