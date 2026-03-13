@@ -1,20 +1,22 @@
 ---
 name: feishu-lark-agent
 description: |
-  Comprehensive Feishu/Lark workspace agent. Handles messages, docs, bitable (multi-dimensional tables), calendar, and tasks via Feishu Open API.
+  飞书/Lark 全能操作 Agent（消息/文档/多维表格/日历/任务/用户）。
 
-  Trigger when user says anything involving:
-  - 飞书消息：发消息、发飞书、查消息、回复消息、搜索消息、查看群聊
-  - 飞书文档：创建文档、查看文档、读取文档、飞书doc
-  - 多维表格/Bitable：查记录、添加记录、更新记录、删除记录
-  - 日历：飞书日历、查日程、创建日程、添加日历
-  - 任务：飞书任务、创建任务、查看任务、完成任务
-  - 用户：查飞书用户、找联系人
+  ⚠️ skill 选择规则：
+  - 发普通文本消息 → 本 skill（msg send）
+  - 发富文本/卡片 → feishu-post / feishu-card
+  - 查考勤 → feishu-attendance
+  - 其余所有飞书操作 → 本 skill
+
+  触发词（任一匹配即调用）：
+  发飞书、发消息给、查群消息、回复飞书、搜飞书消息、列群聊、
+  创建飞书文档、读飞书文档、查多维表、添加bitable记录、更新表格、
+  飞书日历、查日程、加日程、飞书任务、创建任务、完成任务、
+  查飞书用户、找联系人、获取open_id
 ---
 
 # Feishu Lark Agent
-
-Zero-dependency Python CLI for Feishu/Lark Open API.
 
 ## Run
 
@@ -22,103 +24,120 @@ Zero-dependency Python CLI for Feishu/Lark Open API.
 source ~/.zshrc && python3 ~/.claude/skills/feishu-lark-agent/feishu.py <category> <action> [--key value ...]
 ```
 
-## Environment Variables
+---
 
-```bash
-FEISHU_APP_ID=cli_xxx          # required
-FEISHU_APP_SECRET=xxx          # required
-FEISHU_OWNER_OPEN_ID=ou_xxx    # optional — auto-grants doc edit + cal invite to this user
-```
+## ID 格式速查（关键）
 
-When `FEISHU_OWNER_OPEN_ID` is set:
-- `doc create` → automatically grants full_access to that user
-- `cal add` → automatically adds that user as calendar attendee
+| 前缀 | 类型 | 用途 |
+|------|------|------|
+| `ou_` | open_id | 用户 ID，用于 `--to` |
+| `oc_` | chat_id | 群聊 ID，用于 `--chat` |
+| 邮箱 | email | 用于 `--email`，自动解析为 open_id |
+| `docx/xxx` URL 后半段 | document_id | 飞书文档 ID |
+| `base/xxx` URL 后半段 | app_token | 多维表格 App Token |
+
+**如果只有姓名**：先 `user search --name "张三"` 获取 open_id，再执行目标操作。
 
 ---
 
-## Commands
+## 命令速查
 
-### Messages (`msg`)
-
+### 消息 `msg`
 ```bash
-msg send  --email <email> | --to <open_id> | --chat <chat_id>  --text "..." | --file /path
-msg history --chat <chat_id> [--limit 20]
-msg reply --to <message_id> --text "..."
-msg search --query "关键词" [--limit 20]
-msg chats  [--limit 50]
+msg send  --to <open_id|chat_id>   --text "..."     # open_id → ou_, chat_id → oc_
+msg send  --email <email>          --text "..."     # 用邮箱发
+msg send  --chat <chat_id>         --text "..."     # 发群
+msg send  --to <open_id>           --file /path     # 发文件内容
+msg reply --to <message_id>        --text "..."
+msg history --chat <chat_id>      [--limit 20]
+msg search  --query "关键词"       [--limit 20]
+msg chats  [--limit 50]                             # 列出所有群聊
 ```
 
-### Users (`user`)
-
+### 用户 `user`
 ```bash
-user get --email <email>          # returns open_id, name, etc.
-user get --id <open_id>
-user search --name "张三"
+user search --name "张三"          # 模糊搜索，返回 open_id
+user get    --email <email>        # 精确查询
+user get    --id <open_id>
 ```
 
-### Documents (`doc`)
-
+### 文档 `doc`
 ```bash
-doc create --title "会议记录" [--folder <token>] [--file /path/to/content.md]
-doc get    --id <document_id>     # document_id from URL: feishu.cn/docx/DOC_ID
-doc list   [--folder <token>] [--limit 50]
+doc create  --title "标题"  [--content "markdown内容"]  [--file /path.md]
+doc get     --id <document_id>     # 从 URL feishu.cn/docx/DOC_ID 取
+doc list   [--folder <token>]     [--limit 50]
 ```
+> 创建后自动授权 `FEISHU_OWNER_OPEN_ID` 编辑权限。
 
-### Bitable (`table`)
-
-App token is in URL: `feishu.cn/base/APP_TOKEN`
-
+### 多维表格 `table`
 ```bash
-table fields  --app <token> --table <id>
-table records --app <token> --table <id> [--filter 'AND(CurrentValue.[状态]="进行中")'] [--limit 100]
-table add     --app <token> --table <id> --data '{"字段":"值"}'
-table update  --app <token> --table <id> --record <recXXX> --data '{"字段":"新值"}'
-table delete  --app <token> --table <id> --record <recXXX>
-table tables  --app <token>
+table tables  --app <token>                         # 先列出所有 table
+table fields  --app <token>  --table <id>           # 必须先查字段！
+table records --app <token>  --table <id>  [--filter 'AND(CurrentValue.[状态]="进行中")']  [--limit 100]
+table add     --app <token>  --table <id>  --data '{"字段名":"值"}'
+table update  --app <token>  --table <id>  --record <recXXX>  --data '{"字段名":"新值"}'
+table delete  --app <token>  --table <id>  --record <recXXX>
 ```
+> **App token 在 URL 中**：`feishu.cn/base/APP_TOKEN`
 
-Always run `table fields` first to see available field names before writing records.
-
-### Calendar (`cal`)
-
-> ⚠️ Bot uses tenant token — cannot access user's personal calendar. Use the bot's own calendar ID (not `primary`). Get it with:
-> ```bash
-> python3 -c "import sys,os,json; sys.path.insert(0,'~/.claude/skills/feishu-lark-agent'.replace('~',os.path.expanduser('~'))); import feishu; print(json.dumps(feishu.api('GET','/calendar/v4/calendars',params={'page_size':50}),indent=2,ensure_ascii=False))"
-> ```
-
+### 日历 `cal`
 ```bash
-cal list   --calendar <id> [--days 7]
-cal add    --calendar <id> --title "..." --start "YYYY-MM-DD HH:MM" --end "YYYY-MM-DD HH:MM" [--location "..."] [--desc "..."] [--attendees "a@x.com,b@x.com"]
-cal delete --calendar <id> --id <event_id>
+cal list   --calendar <cal_id>   [--days 7]
+cal add    --calendar <cal_id>   --title "..." --start "YYYY-MM-DD HH:MM" --end "YYYY-MM-DD HH:MM"  [--location "..."]  [--attendees "a@x.com,b@x.com"]
+cal delete --calendar <cal_id>   --id <event_id>
 ```
+> Bot 无法访问个人日历，需用 Bot 自己的日历 ID（非 `primary`）。
 
-### Tasks (`task`)
-
+### 任务 `task`
 ```bash
-task list   [--completed true] [--limit 50]
-task add    --title "..." [--due "YYYY-MM-DD"] [--note "..."]
-task done   --id <task_guid>
+task list  [--completed true]  [--limit 50]
+task add   --title "..."  [--due "YYYY-MM-DD"]  [--note "..."]
+task done  --id <task_guid>
 task delete --id <task_guid>
 ```
 
 ---
 
-## Key Workflows
+## 高频场景（直接复制执行）
 
-**Send to person by name** (only have name, not ID):
-1. `user search --name "张三"` → get open_id
-2. `msg send --to <open_id> --text "..."`
+**1. 按姓名发消息**
+```bash
+# step1 获取 open_id
+python3 feishu.py user search --name "张三"
+# step2 发消息
+python3 feishu.py msg send --to ou_xxx --text "你好"
+```
 
-**Add Bitable record** (unknown fields):
-1. `table fields --app ... --table ...` → see field names and types
-2. `table add --app ... --table ... --data '{...}'`
+**2. 给群发消息**（已知群名 → 先查 chat_id）
+```bash
+python3 feishu.py msg chats        # 找到目标群的 chat_id (oc_xxx)
+python3 feishu.py msg send --chat oc_xxx --text "通知内容"
+```
 
-## Common Errors
+**3. 添加多维表记录**（先查字段避免字段名写错）
+```bash
+python3 feishu.py table fields --app APP_TOKEN --table TABLE_ID
+python3 feishu.py table add --app APP_TOKEN --table TABLE_ID --data '{"标题":"xxx","状态":"进行中"}'
+```
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `99991671` | App not authorized | Enable permission in Feishu Open Platform |
-| `230006` | No calendar access | Enable `calendar:calendar` permission |
-| `1254043` | Bitable not found | Check app_token in URL |
-| `191001` | Invalid calendar_id | Don't use `primary`; get real calendar ID (see above) |
-| `Missing FEISHU_APP_ID` | Env not loaded | `source ~/.zshrc` |
+**4. 创建文档并写入内容**
+```bash
+python3 feishu.py doc create --title "会议记录" --content "# 会议记录\n\n## 议题\n- 内容"
+```
+
+**5. 查看近期日程**
+```bash
+python3 feishu.py cal list --calendar <cal_id> --days 7
+```
+
+---
+
+## 错误速查
+
+| 错误码 | 原因 | 解决 |
+|--------|------|------|
+| `99991671` | 权限未开通 | 飞书开放平台添加权限 |
+| `230006` | 日历权限缺失 | 开通 `calendar:calendar` |
+| `1254043` | Bitable 未找到 | 检查 URL 中的 app_token |
+| `191001` | 日历 ID 错误 | 不能用 `primary`，用真实 cal_id |
+| `Missing FEISHU_APP_ID` | 环境变量未加载 | `source ~/.zshrc` |

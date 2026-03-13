@@ -421,7 +421,7 @@ def task_add(a):
         # Task API uses milliseconds (unlike Calendar which uses seconds)
         data['due'] = {'timestamp': str(ts * 1000), 'is_all_day': ':' not in a.due}
     if a.note:
-        data['description'] = {'text': a.note}
+        data['description'] = a.note
     # Auto-assign to owner if FEISHU_OWNER_OPEN_ID is set
     if OWNER_OPEN_ID:
         data['members'] = [{'id': OWNER_OPEN_ID, 'type': 'user', 'role': 'assignee'}]
